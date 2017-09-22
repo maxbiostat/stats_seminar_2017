@@ -6,8 +6,8 @@
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.14}
 \usepackage{cancel}
-\usepackage{animate}
-
+% \usepackage{algorithm, algpseudocode}
+\usepackage[linesnumbered,ruled]{algorithm2e}
 %-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 %
 %	PRESENTATION INFORMATION
@@ -17,7 +17,8 @@
 \title{Bayesian estimation of time-trees:}
 \subtitle{A journey through a strange land}
 % \date{\today}
-\author{Luiz Max Carvalho}
+\author{Luiz Max Carvalho \\ \emailto{lm.carvalho@ed.ac.uk}}
+
 \institute{ Institute of Evolutionary Biology \\ Maxwell Institute seminar series 2017 }
 
 \hypersetup{
@@ -151,6 +152,26 @@ Let $T_{\text{mrca}}$ denote the age of the most recent common ancestor:
 \end{frame}
 
 %-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+%	FRAME: target distribution
+%-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+\begin{frame}{Target}
+% \begin{block}{Bayesian paradigm:}
+%  \textbf{Marginalise} (integrate), not maximise
+% \end{block}
+% \vspace{2em}
+\begin{equation}
+\label{eq:posterior}
+ p(t, \boldsymbol b, \boldsymbol \omega | D) = \frac{f(D | t, \boldsymbol b, \boldsymbol \omega ) \pi(t, \boldsymbol b, \boldsymbol \omega )}{\sum_{t_i \in \boldsymbol T_n} \int_{\boldsymbol B}\int_{\boldsymbol \Omega} f(D | t_i, \boldsymbol b_i, \boldsymbol \omega ) \pi(t_i, \boldsymbol b_i, \boldsymbol \omega ) d\boldsymbol\omega d\boldsymbol b_i}
+\end{equation}
+\begin{itemize}
+ \item $D$: observed sequence (DNA) data;
+ \item $\boldsymbol T_n$: set of all binary ranked trees ($\mathbb{G} ^{(2n-3)!!}$);
+ \item $\boldsymbol b_k$: set of branch lengths of $t_k \in \boldsymbol T_n$ ($\mathbb{R}^{2n-2}_+$, kind of) ;
+ \item $\boldsymbol \omega$: set of parameters of interest such as substitution model parameters, migration rates, heritability coefficients, etc.
+\end{itemize}
+\end{frame}
+
+%-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 %	FRAME: gist of BP
 %-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 \begin{frame}{Bayesian phylogenetics}
@@ -161,26 +182,6 @@ Let $T_{\text{mrca}}$ denote the age of the most recent common ancestor:
 	\includegraphics[width=0.55\textwidth,height=6cm]{figures/Joint_trees_omega_marg2.pdf}
 	}
 \end{figure}
-\end{frame}
-
-%-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-%	FRAME: target distribution
-%-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-\begin{frame}{Target}
-% \begin{block}{Bayesian paradigm:}
-%  \textbf{Marginalise} (integrate), not maximise
-% \end{block}
-% \vspace{2em}
-\begin{equation}
-\label{eq:posterior}
- p(t, \boldsymbol b, \boldsymbol \theta | D) = \frac{f(D | t, \boldsymbol b, \boldsymbol \theta ) \pi(t, \boldsymbol b, \boldsymbol \theta )}{\sum_{t_i \in \boldsymbol T_n} \int_{\boldsymbol B}\int_{\boldsymbol \Theta} f(D | t_i, \boldsymbol b_i, \boldsymbol \theta ) \pi(t_i, \boldsymbol b_i, \boldsymbol \theta ) d\boldsymbol\theta d\boldsymbol b_i}
-\end{equation}
-\begin{itemize}
- \item $D$: observed data;
- \item $\boldsymbol T_n$: set of all binary ranked trees ($\mathbb{R}^{2n-2}_+ \times \mathbb{G} ^{(2n-3)!!}, $ kind of);
- \item  $\boldsymbol b_k$: set of branch lengths of $t_k \in \boldsymbol T_n$ ;
- \item $\boldsymbol \theta$: set of parameters of interest such as substitution model parameters, migration rates, heritability coefficients, etc.
-\end{itemize}
 \end{frame}
 
 %-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
@@ -284,7 +285,7 @@ Let $\tau = (t, \boldsymbol b)$ denote a tree with topology $t$ and branch lengt
 For two trees $\tau$ and $\tau^\prime$, denote  the transition kernel by $q_{\gamma}(\tau| \tau^\prime) := Pr(\tau^\prime \rightarrow \tau | \gamma)$.
 
 Accepting with probability
-\[ A_{\gamma}(\tau | \tau^\prime) = min\left(1, \frac{ p(\tau^\prime, \boldsymbol \theta | D)q_{\gamma}(\tau|\tau^\prime)}{p(\tau, \boldsymbol \theta | D)q_{\gamma}(\tau^\prime|\tau)}\right) \]
+\[ A_{\gamma}(\tau | \tau^\prime) = min\left(1, \frac{ p(\tau^\prime, \boldsymbol \omega | D)q_{\gamma}(\tau|\tau^\prime)}{p(\tau, \boldsymbol \omega | D)q_{\gamma}(\tau^\prime|\tau)}\right) \]
 
 leads to the desired target.
 
@@ -302,16 +303,53 @@ leads to the desired target.
 %-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 %	FRAME: Time-tree kernels
 %-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-\begin{frame}{Height-constrained kernels: SubTreeLeap}
+\begin{frame}{Height-constrained kernels: SubTreeLeap (STL)}
+
+\begin{enumerate}
+     \item Excluding the root, pick a node $i$ in  $\tau$ uniformly at random, i.e., with probability $1/(2n-3)$;
+     
+     \item Draw a patristic distance $\delta$ from the distance kernel $k(\delta | \sigma)$;
+     
+     \item Find the set of destination nodes $\mathbf{D_i}^\delta $ that are within distance $\delta$ \textbf{and} whose heights are not less than $h(i) - \delta$;
+     
+      If $\mathbf{D_i}^\delta = \O$:
+      \begin{itemize}
+       \item prune $p_i$ and regraft it at height $h_{b} =  h(p_i) - \delta$, creating a new tree $\tau^\prime$, else
+       \item pick a node $j \in \mathbf{D_i}^\delta $ with probability $Pr(i\to j) = 1/|\mathbf{D_i}^\delta |$;
+      \end{itemize}
+
+     \item Prune the tree at $p_i$ and regraft it at $p_j$, creating a new tree $\tau^\prime$. %% TODO: should it be "prune the tree at $i$" ??
+     
+\end{enumerate}
+
+\end{frame}
+
+
+%-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+%	FRAME: Time-tree kernels
+%-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+\begin{frame}{STL -- illustration}
 \begin{figure}
 	\includegraphics[width=\textwidth,height=8cm]{figures/STL_kernel.pdf} 
 \end{figure}
 \end{frame}
 
 %-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+%	FRAME: STL properties
+%-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+\begin{frame}{STL -- properties}
+\begin{itemize}
+ \item Adaptive;
+ \item Height-constrained;
+ \item Changes topology and branch lengths \textbf{simultaneously};
+ \item Inherits cool properties from SPR.
+\end{itemize}
+\end{frame}
+
+%-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 %	FRAME: SubTreeLeap hamiltonian
 %-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-\begin{frame}{SubTreeLeap is Hamiltonian$^\ast$ on $\boldsymbol T_n$ }
+\begin{frame}{Conjecture: SubTreeLeap is Hamiltonian on $\boldsymbol T_n$ }
 \begin{figure}
 	\includegraphics[scale=0.35]{figures/hamiltonian_SPR_4taxa.pdf} 
 \end{figure}
@@ -338,7 +376,7 @@ leads to the desired target.
 A clade $c$ is any collection of leaves $s_1, s_2, \ldots, s_n$ such that they share a common ancestor in the tree.
 For $n$ taxa (leaves) there are $A(n) = 2^{n-1} -1$ possible clades. 
 
-Let $\boldsymbol X_i = \{X^{(1)}, X^{(2)}, \ldots, X^{(n)}\} \in [0, 1]^n$ be a collection of samples from a Markov chain such that $X^{(j)}_i = 1$ if clade $i$ was sampled in the $j$-th iteration and $0$ otherwise.
+Let $\boldsymbol X_i = \{X_i^{(1)}, X_i^{(2)}, \ldots, X_i^{(n)}\} \in [0, 1]^n$ be a collection of samples from a Markov chain such that $X^{(j)}_i = 1$ if clade $i$ was sampled in the $j$-th iteration and $0$ otherwise.
 Also, for $s_i = \sum_k X_i^{(k)}$ we call $f_i^c = s_i/n$ the \textit{frequency} of clade $i$.
 
 \end{frame}
@@ -348,7 +386,7 @@ Also, for $s_i = \sum_k X_i^{(k)}$ we call $f_i^c = s_i/n$ the \textit{frequency
 %-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 \begin{frame}{Clade frequencies -- deviation}
 
-\[ \delta := \max_{1 \leq i \leq A(n)} \frac{|f^c_i - r^c_i|}{r^c_i}, \]
+\[ d := \max_{1 \leq i \leq A(n)} |f^c_i - r^c_i|, \]
 where $\boldsymbol f^c$ and $\boldsymbol r^c$ are the observed and true clade frequencies.
 
 \begin{figure}
@@ -368,6 +406,31 @@ Let $m_i = \min(n - s_i, s_i)$, it can be shown that the maximum number of trans
 Let $\delta_i = \Delta(\boldsymbol X_i)$, where $\Delta(\cdot)$ a function that counts the number of state transitions in $\boldsymbol X_i$.
 Then $\sigma_i = \delta_i/J_i \in [0, 1]$ is a score that measures the relative efficiency of sampling by comparing how how many transitions happened compared to the theoretical maximum. 
 \end{frame}
+
+%-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+%	FRAME: Results -- contenders
+%-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+\begin{frame}{Experimental setup}
+ All MCMC implemented in the JAVA open-source software BEAST (\url{http://beast.community/});
+ \begin{itemize}
+  \item  Default kernels:
+  \begin{itemize}
+  \item SubTreeSlide -- adaptive, rarely moves topology;
+  \item Narrow exchange -- non-adaptive, local moves;
+  \item Wide exchange -- non-adaptive, bold moves;
+  \item NodeHeights -- scale all node heights by a factor (within their bounds);
+ \end{itemize}
+  \item SubTreeLeap;
+ \end{itemize}
+
+\begin{itemize}
+ \item[--] Most results will be shown for 100 MCMC runs.
+\end{itemize}
+
+
+\end{frame}
+
+
 
 %-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 %	FRAME: Results Denv4 MDS -- RF
@@ -436,7 +499,7 @@ Then $\sigma_i = \delta_i/J_i \in [0, 1]$ is a score that measures the relative 
 %-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 %	FRAME: Results Denv4
 %-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-\begin{frame}{Dengue 4 \textit{env} (17 taxa, 1485 sites)}
+\begin{frame}{Dengue 4 \textit{env} (17 taxa, 1485 NT sites)}
 \begin{figure}
 \begin{column}{0.5\textwidth}
     \begin{figure}
@@ -454,7 +517,7 @@ Then $\sigma_i = \delta_i/J_i \in [0, 1]$ is a score that measures the relative 
 %-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 %	FRAME: Results RSVA
 %-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-\begin{frame}{RSVA G protein (35 taxa, 629 sites)}
+\begin{frame}{RSVA G protein (35 taxa, 629 NT sites)}
 \begin{figure}
 \begin{column}{0.5\textwidth}
     \begin{figure}
@@ -472,7 +535,7 @@ Then $\sigma_i = \delta_i/J_i \in [0, 1]$ is a score that measures the relative 
 %-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 %	FRAME: Results YFV
 %-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-\begin{frame}{YFV \textit{prM/E} gene (71 taxa, 654 sites)}
+\begin{frame}{YFV \textit{prM/E} gene (71 taxa, 654 NT sites)}
 \begin{figure}
 \begin{column}{0.5\textwidth}
     \begin{figure}
@@ -489,6 +552,15 @@ Then $\sigma_i = \delta_i/J_i \in [0, 1]$ is a score that measures the relative 
 
 %-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 %	FRAME: Results Extra
+%-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+\begin{frame}{Ebola virus full genome (1610 taxa (!), 18990 NT sites)}
+\begin{figure}
+	\includegraphics[width=\textwidth,height=8cm]{figures/comparison_ebola.pdf} 
+\end{figure}
+\end{frame}
+
+%-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+%	FRAME: Results Extra II
 %-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 \begin{frame}{Metazoans (contemporaneous, 55 taxa, 30257 AA sites)}
 \begin{figure}
@@ -508,8 +580,10 @@ SubTreeLeap seems to
 
 Open problems:
 \begin{itemize}
- \item[--] Optimal scaling: what's the optimal acceptance probability?
  \item[--] Can we construct even more efficient proposals? How to exploit structure?
+ \item[--] Different distance kernels (currently Gaussian);
+ \item[--] Different weighting (currently uniform);
+ \item[--] Optimal scaling: what's the optimal acceptance probability?
 \end{itemize}
 \end{frame}
 
