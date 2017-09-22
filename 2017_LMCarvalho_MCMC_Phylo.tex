@@ -301,7 +301,7 @@ leads to the desired target.
 \end{frame}
 
 %-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-%	FRAME: Time-tree kernels
+%	FRAME: Time-tree kernels I
 %-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 \begin{frame}{Height-constrained kernels: SubTreeLeap (STL)}
 
@@ -314,11 +314,9 @@ leads to the desired target.
      
       If $\mathbf{D_i}^\delta = \O$:
       \begin{itemize}
-       \item prune $p_i$ and regraft it at height $h_{b} =  h(p_i) - \delta$, creating a new tree $\tau^\prime$, else
-       \item pick a node $j \in \mathbf{D_i}^\delta $ with probability $Pr(i\to j) = 1/|\mathbf{D_i}^\delta |$;
+       \item prune $p_i$ and regraft it at height $h_{b} =  h(p_i) - \delta$ or $h_{a} =  h(p_i) + \delta$ with probability $1/2$, creating a new tree $\tau^\prime$, else
+       \item pick a node $j \in \mathbf{D_i}^\delta $ with probability $Pr(i\to j) = 1/|\mathbf{D_i}^\delta |$, prune the tree at $p_i$ and regraft it at $p_j$, creating a new tree $\tau^\prime$;
       \end{itemize}
-
-     \item Prune the tree at $p_i$ and regraft it at $p_j$, creating a new tree $\tau^\prime$. %% TODO: should it be "prune the tree at $i$" ??
      
 \end{enumerate}
 
@@ -326,8 +324,7 @@ leads to the desired target.
 
 
 %-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-%	FRAME: Time-tree kernels
-%-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+%	FRAME: STL picture
 \begin{frame}{STL -- illustration}
 \begin{figure}
 	\includegraphics[width=\textwidth,height=8cm]{figures/STL_kernel.pdf} 
